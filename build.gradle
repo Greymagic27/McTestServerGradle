@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'java-gradle-plugin'
-    id 'maven-publish'
+    id 'com.gradle.plugin-publish' version "2.1.1"
 }
 
 group = 'io.github.greymagic27'
@@ -16,10 +16,15 @@ dependencies {
 }
 
 gradlePlugin {
+    website.set("https://github.com/Greymagic27/McTestServerGradle")
+    vcsUrl.set("https://github.com/Greymagic27/McTestServerGradle.git")
     plugins {
         create('McTestServer') {
-            id = 'io.github.greymagic27.mc-test-server'
+            displayName = 'McTestServer'
+            id = 'io.github.greymagic27.McTestServer'
             implementationClass = 'io.github.greymagic27.McTestServer.TestServerPlugin'
+            description = 'A utility to run a test MC server when developing plugins'
+            tags.add("minecraft")
         }
     }
 }
