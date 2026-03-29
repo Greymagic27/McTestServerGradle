@@ -9,6 +9,7 @@ public class TestServerPlugin implements Plugin<Project> {
         project.getTasks().register("McTestServer", TestServerTask.class, task -> {
             task.setGroup("Minecraft");
             task.setDescription("A utility to run a test MC server when developing plugins");
+            task.serverVersion = "";
         });
     }
 }
