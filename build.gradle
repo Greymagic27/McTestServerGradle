@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group = 'io.github.greymagic27'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("tools.jackson.core:jackson-databind:3.1.1")
+}
+
+gradlePlugin {
+    plugins {
+        create('McTestServer') {
+            id = 'io.github.greymagic27.mc-test-server'
+            implementationClass = 'io.github.greymagic27.McTestServer.TestServerPlugin'
+        }
+    }
+}
