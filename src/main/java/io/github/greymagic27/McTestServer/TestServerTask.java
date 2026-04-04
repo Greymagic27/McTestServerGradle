@@ -25,7 +25,6 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.api.tasks.testing.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -112,8 +111,7 @@ public class TestServerTask extends DefaultTask {
             if ("gradle".equalsIgnoreCase(buildTool)) {
                 boolean hasShadow = hasShadowPlugin(base);
                 getLogger().lifecycle("Packaging plugin using Gradle: " + (hasShadow ? "shadowJar" : "build"));
-                String gradleCmd = System.getProperty("os.name").toLowerCase().contains("win") ? "gradlew.bat" : "./gradlew";
-                List<String> args = hasShadow ? List.of(gradleCmd, "shadowJar") : List.of(gradleCmd, "build");
+                List<String> args = hasShadow ? List.of("gradle", "shadowJar") : List.of("gradle", "build");
                 pb = new ProcessBuilder(args);
             } else {
                 throw new RuntimeException("Unknown build tool: " + buildTool);
