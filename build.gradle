@@ -24,7 +24,7 @@ gradlePlugin {
             id = 'io.github.greymagic27.McTestServer'
             implementationClass = 'io.github.greymagic27.McTestServer.TestServerPlugin'
             description = 'A utility to run a test MC server when developing plugins'
-            tags.add("minecraft")
+            tags.add("mcTestServer")
         }
     }
 }
