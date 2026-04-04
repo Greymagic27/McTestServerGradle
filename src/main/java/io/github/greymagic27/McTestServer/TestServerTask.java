@@ -30,9 +30,7 @@ public class TestServerTask extends DefaultTask {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static boolean shutdownHookAdded = false;
-    @Input
     public String serverVersion;
-    @Input
     public List<PluginSpec> additionalPlugins = new ArrayList<>();
     private Process serverProcess;
 
@@ -306,6 +304,16 @@ public class TestServerTask extends DefaultTask {
 
     private void openFolder(Path folder) throws IOException {
         new ProcessBuilder("explorer.exe", folder.toAbsolutePath().toString()).start();
+    }
+
+    @Input
+    public String getServerVersion() {
+        return serverVersion;
+    }
+
+    @Input
+    public List<PluginSpec> getAdditionalPlugins() {
+        return additionalPlugins;
     }
 
     public static class PluginSpec {
