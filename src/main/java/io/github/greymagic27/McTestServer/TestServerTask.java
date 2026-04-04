@@ -323,6 +323,10 @@ public class TestServerTask extends DefaultTask {
         return additionalPlugins;
     }
 
+    public DirectoryProperty getProjectDir() {
+        return projectDir;
+    }
+
     public static class PluginSpec {
         @Input
         public String pluginName;

@@ -10,7 +10,7 @@ public class TestServerPlugin implements Plugin<Project> {
             task.setGroup("McTestServer");
             task.setDescription("A utility to run a test MC server when developing plugins");
             task.serverVersion = "";
-            task.projectDir.set(project.getProjectDir());
+            task.projectDir.set(task.getProjectDir());
         });
     }
 }
