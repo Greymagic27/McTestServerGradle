@@ -32,17 +32,6 @@ public class TestServerTask extends DefaultTask {
     private static boolean shutdownHookAdded = false;
     @Input
     public String serverVersion;
-    /**
-     * Additional plugins to download into the test server.
-     * Example Gradle configuration:
-     * mcTestServer {
-     * serverVersion = "1.20.1"
-     * additionalPlugins = [
-     * [pluginName: "mcMMO.jar", pluginUrl: "<a href="https://example.com/mcMMO.jar">...</a>"],
-     * [pluginName: "SomeOtherPlugin.jar", pluginUrl: "<a href="https://example.com/other.jar">...</a>"]
-     * ]
-     * }
-     */
     @Input
     public List<PluginSpec> additionalPlugins = new ArrayList<>();
     private Process serverProcess;
@@ -259,6 +248,10 @@ public class TestServerTask extends DefaultTask {
                     if (line.contains("Done (")) {
                         writer.write("op Greymagic27\n");
                         writer.flush();
+                    }
+                    if (line.contains("left the game")) {
+                        stopServer();
+                        break;
                     }
                 }
             } catch (IOException e) {
