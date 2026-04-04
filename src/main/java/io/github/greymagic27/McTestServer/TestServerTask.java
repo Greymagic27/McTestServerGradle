@@ -2,7 +2,6 @@ package io.github.greymagic27.McTestServer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -26,18 +25,23 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.api.tasks.testing.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public class TestServerTask extends DefaultTask {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private boolean shutdownHookAdded = false;
     public String serverVersion;
     public List<PluginSpec> additionalPlugins = new ArrayList<>();
-    private Process serverProcess;
     @InputDirectory
     public DirectoryProperty projectDir;
+    private boolean shutdownHookAdded = false;
+    private Process serverProcess;
+
+    public TestServerTask() {
+        this.projectDir = getProject().getObjects().directoryProperty();
+    }
 
     private static boolean isStableVersion(String v) {
         return !v.contains("-");
@@ -103,7 +107,7 @@ public class TestServerTask extends DefaultTask {
     private void buildPlugin() {
         try {
             String buildTool = detectBuildTool();
-            Path base = getProjectDir().toPath();
+            Path base = projectDir.getAsFile().get().toPath();
             ProcessBuilder pb;
             if ("gradle".equalsIgnoreCase(buildTool)) {
                 boolean hasShadow = hasShadowPlugin(base);
@@ -139,7 +143,7 @@ public class TestServerTask extends DefaultTask {
     }
 
     private Path findPluginJar() throws IOException {
-        Path base = getProjectDir().toPath();
+        Path base = projectDir.getAsFile().get().toPath();
         try (Stream<Path> walk = Files.walk(base)) {
             List<Path> targetDir = walk.filter(Files::isDirectory).filter(p -> p.getFileName().toString().equalsIgnoreCase("target")).toList();
             if (targetDir.isEmpty()) throw new IOException("No 'target' directory found in project tree starting at: " + base);
@@ -285,7 +289,7 @@ public class TestServerTask extends DefaultTask {
     }
 
     private String detectBuildTool() {
-        Path base = getProjectDir().toPath();
+        Path base = projectDir.getAsFile().get().toPath();
         if (Files.exists(base.resolve("build.gradle")) || Files.exists(base.resolve("build.gradle.kts"))) {
             return "gradle";
         }
@@ -319,14 +323,6 @@ public class TestServerTask extends DefaultTask {
     @Input
     public List<PluginSpec> getAdditionalPlugins() {
         return additionalPlugins;
-    }
-
-    public void setProjectDir(File dir) {
-        this.projectDir.set(dir);
-    }
-
-    public File getProjectDir() {
-        return projectDir.getAsFile().get();
     }
 
     public static class PluginSpec {
