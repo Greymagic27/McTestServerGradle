@@ -2,6 +2,7 @@ package io.github.greymagic27.McTestServer;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -21,7 +22,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.TaskAction;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -29,10 +32,12 @@ import tools.jackson.databind.ObjectMapper;
 public class TestServerTask extends DefaultTask {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static boolean shutdownHookAdded = false;
+    private boolean shutdownHookAdded = false;
     public String serverVersion;
     public List<PluginSpec> additionalPlugins = new ArrayList<>();
     private Process serverProcess;
+    @InputDirectory
+    public DirectoryProperty projectDir;
 
     private static boolean isStableVersion(String v) {
         return !v.contains("-");
@@ -98,10 +103,10 @@ public class TestServerTask extends DefaultTask {
     private void buildPlugin() {
         try {
             String buildTool = detectBuildTool();
-            Path projectDir = getProject().getProjectDir().toPath();
+            Path base = getProjectDir().toPath();
             ProcessBuilder pb;
             if ("gradle".equalsIgnoreCase(buildTool)) {
-                boolean hasShadow = hasShadowPlugin(projectDir);
+                boolean hasShadow = hasShadowPlugin(base);
                 getLogger().lifecycle("Packaging plugin using Gradle: " + (hasShadow ? "shadowJar" : "build"));
                 String gradleCmd = System.getProperty("os.name").toLowerCase().contains("win") ? "gradlew.bat" : "./gradlew";
                 List<String> args = hasShadow ? List.of(gradleCmd, "shadowJar") : List.of(gradleCmd, "build");
@@ -109,7 +114,7 @@ public class TestServerTask extends DefaultTask {
             } else {
                 throw new RuntimeException("Unknown build tool: " + buildTool);
             }
-            pb.directory(projectDir.toFile());
+            pb.directory(base.toFile());
             pb.inheritIO();
             Process process = pb.start();
             if (!process.waitFor(2, TimeUnit.MINUTES) || process.exitValue() != 0) throw new RuntimeException("Gradle build failed");
@@ -134,7 +139,7 @@ public class TestServerTask extends DefaultTask {
     }
 
     private Path findPluginJar() throws IOException {
-        Path base = getProject().getProjectDir().toPath();
+        Path base = getProjectDir().toPath();
         try (Stream<Path> walk = Files.walk(base)) {
             List<Path> targetDir = walk.filter(Files::isDirectory).filter(p -> p.getFileName().toString().equalsIgnoreCase("target")).toList();
             if (targetDir.isEmpty()) throw new IOException("No 'target' directory found in project tree starting at: " + base);
@@ -280,7 +285,7 @@ public class TestServerTask extends DefaultTask {
     }
 
     private String detectBuildTool() {
-        Path base = getProject().getProjectDir().toPath();
+        Path base = getProjectDir().toPath();
         if (Files.exists(base.resolve("build.gradle")) || Files.exists(base.resolve("build.gradle.kts"))) {
             return "gradle";
         }
@@ -314,6 +319,14 @@ public class TestServerTask extends DefaultTask {
     @Input
     public List<PluginSpec> getAdditionalPlugins() {
         return additionalPlugins;
+    }
+
+    public void setProjectDir(File dir) {
+        this.projectDir.set(dir);
+    }
+
+    public File getProjectDir() {
+        return projectDir.getAsFile().get();
     }
 
     public static class PluginSpec {
