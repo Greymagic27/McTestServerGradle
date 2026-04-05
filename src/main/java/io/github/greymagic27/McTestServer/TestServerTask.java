@@ -32,7 +32,7 @@ public class TestServerTask extends DefaultTask {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     public String serverVersion;
-    public List<PluginSpec> plugins = new ArrayList<>();
+    private final List<PluginSpec> plugins = new ArrayList<>();
     public DirectoryProperty projectDir;
     private boolean shutdownHookAdded = false;
     private Process serverProcess;
