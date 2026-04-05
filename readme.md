@@ -6,13 +6,8 @@ plugins {
 }
 
 McTestServer {
-    // Optional: specify Minecraft version; leave blank to auto-fetch latest
     serverVersion = "1.20.1"
-
-    // Optional: add extra plugins to download into the test server
-    additionalPlugins = [
-        [pluginName: "AnotherPlugin.jar", pluginUrl: "https://example.com/AnotherPlugin.jar"],
-        [pluginName: "SomeOtherPlugin.jar", pluginUrl: "https://example.com/other.jar"]
-    ]
+    additionalPlugin("AnotherPlugin.jar", "https://example.com/AnotherPlugin.jar")
+    additionalPlugin("SomeOtherPlugin.jar", "https://example.com/other.jar")
 }
 ```
