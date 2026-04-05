@@ -5,6 +5,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -143,7 +144,7 @@ public class TestServerTask extends DefaultTask {
     private Path findPluginJar() throws IOException {
         Path base = projectDir.getAsFile().get().toPath();
         try (Stream<Path> walk = Files.walk(base)) {
-            List<Path> targetDir = walk.filter(Files::isDirectory).filter(p -> p.getFileName().toString().equalsIgnoreCase("target")).toList();
+            List<Path> targetDir = walk.filter(Files::isDirectory).filter(p -> p.getFileName().toString().equalsIgnoreCase("libs") && p.getParent().getFileName().toString().equalsIgnoreCase("build")).toList();
             if (targetDir.isEmpty()) throw new IOException("No 'target' directory found in project tree starting at: " + base);
             Path newestJar = null;
             long newestTime = -1;
@@ -323,11 +324,7 @@ public class TestServerTask extends DefaultTask {
         return additionalPlugins;
     }
 
-    public DirectoryProperty getProjectDir() {
-        return projectDir;
-    }
-
-    public static class PluginSpec {
+    public static class PluginSpec implements Serializable {
         @Input
         public String pluginName;
         @Input
