@@ -60,6 +60,7 @@ public class TestServerTask extends DefaultTask {
     @TaskAction
     public void runTask() throws IOException, InterruptedException {
         Path tempServerDir = Files.createTempDirectory("mc-server-");
+        getLogger().lifecycle("Detected plugin version: " + getProject().getVersion());
         getLogger().lifecycle("Temp server directory: " + tempServerDir);
         Path pluginDir = tempServerDir.resolve("plugins");
         Files.createDirectories(pluginDir);
@@ -94,9 +95,12 @@ public class TestServerTask extends DefaultTask {
         serverProcess = pb.start();
         addShutdownHook();
         handleConsole(serverProcess, tempServerDir);
-        int exitCode = serverProcess.waitFor();
-        if (exitCode != 0) throw new RuntimeException("Server exited with code: " + exitCode);
-        deleteRecursive(tempServerDir);
+        try {
+            int exitCode = serverProcess.waitFor();
+            if (exitCode != 0) throw new RuntimeException("Server exited with code: " + exitCode);
+        } finally {
+            deleteRecursive(tempServerDir);
+        }
     }
 
     private void addShutdownHook() {
