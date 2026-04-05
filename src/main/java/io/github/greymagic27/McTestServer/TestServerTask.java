@@ -378,7 +378,7 @@ public class TestServerTask extends DefaultTask {
     }
 
     @SuppressWarnings("unused")
-    public void plugin(String name, String url) {
+    public void additionalPlugins(String name, String url) {
         PluginSpec spec = new PluginSpec();
         spec.pluginName = name;
         spec.pluginUrl = url;
