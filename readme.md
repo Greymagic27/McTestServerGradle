@@ -5,7 +5,7 @@ plugins {
     id 'io.github.greymagic27.mc-test-server' version '1.0.0'
 }
 
-runTestServer {
+McTestServer {
     // Optional: specify Minecraft version; leave blank to auto-fetch latest
     serverVersion = "1.20.1"
 
