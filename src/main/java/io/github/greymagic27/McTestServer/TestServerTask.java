@@ -137,7 +137,7 @@ public class TestServerTask extends DefaultTask {
                     test.redirectErrorStream(true);
                     Process testProcess = test.start();
                     testProcess.waitFor();
-                    pb = new ProcessBuilder(cmd, task);
+                    pb = new ProcessBuilder(cmd, task, "--no-daemon");
                     chosenCmd = cmd;
                     break;
                 } catch (IOException | InterruptedException ignored) {
