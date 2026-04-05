@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import org.gradle.api.DefaultTask;
@@ -35,6 +36,7 @@ public class TestServerTask extends DefaultTask {
     private final List<PluginSpec> plugins = new ArrayList<>();
     public DirectoryProperty projectDir;
     private boolean shutdownHookAdded = false;
+    private volatile boolean stopping = false;
     private Process serverProcess;
 
     public TestServerTask() {
@@ -336,14 +338,20 @@ public class TestServerTask extends DefaultTask {
     }
 
     private void stopServer() {
+        if (stopping) return;
+        stopping = true;
         if (serverProcess != null && serverProcess.isAlive()) {
             try {
                 getLogger().warn("Stopping server");
                 BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(serverProcess.getOutputStream()));
                 writer.write("stop\n");
                 writer.flush();
-                serverProcess.destroyForcibly();
-                serverProcess.waitFor();
+                boolean exited = serverProcess.waitFor(30, TimeUnit.SECONDS);
+                if (!exited) {
+                    getLogger().warn("Server did not stop after 30 seconds, force killing");
+                    serverProcess.destroyForcibly();
+                    serverProcess.waitFor();
+                }
             } catch (IOException | InterruptedException e) {
                 getLogger().error("Failed to stop server", e);
             }
