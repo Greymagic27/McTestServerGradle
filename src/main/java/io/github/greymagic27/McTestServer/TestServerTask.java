@@ -32,7 +32,7 @@ public class TestServerTask extends DefaultTask {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     public String serverVersion;
-    public List<PluginSpec> additionalPlugins = new ArrayList<>();
+    public List<PluginSpec> plugins = new ArrayList<>();
     public DirectoryProperty projectDir;
     private boolean shutdownHookAdded = false;
     private Process serverProcess;
@@ -82,7 +82,7 @@ public class TestServerTask extends DefaultTask {
         packageFuture.join();
         Path pluginJar = findPluginJar();
         Files.copy(pluginJar, pluginDir.resolve(pluginJar.getFileName()), StandardCopyOption.REPLACE_EXISTING);
-        for (PluginSpec plugin : additionalPlugins) {
+        for (PluginSpec plugin : plugins) {
             plugin.validate();
             downloadPlugin(plugin, pluginDir);
         }
@@ -357,7 +357,7 @@ public class TestServerTask extends DefaultTask {
 
     @Input
     public List<PluginSpec> getAdditionalPlugins() {
-        return additionalPlugins;
+        return plugins;
     }
 
     @InputDirectory
@@ -382,6 +382,6 @@ public class TestServerTask extends DefaultTask {
         PluginSpec spec = new PluginSpec();
         spec.pluginName = name;
         spec.pluginUrl = url;
-        additionalPlugins.add(spec);
+        plugins.add(spec);
     }
 }
