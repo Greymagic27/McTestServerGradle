@@ -7,7 +7,7 @@ plugins {
 
 McTestServer {
     serverVersion = "1.20.1"
-    additionalPlugin("AnotherPlugin.jar", "https://example.com/AnotherPlugin.jar")
-    additionalPlugin("SomeOtherPlugin.jar", "https://example.com/other.jar")
+    withPlugin("AnotherPlugin.jar", "https://example.com/AnotherPlugin.jar")
+    withPlugin("SomeOtherPlugin.jar", "https://example.com/other.jar")
 }
 ```
