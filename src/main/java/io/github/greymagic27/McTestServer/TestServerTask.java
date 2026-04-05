@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import org.gradle.api.DefaultTask;
@@ -34,7 +33,6 @@ public class TestServerTask extends DefaultTask {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     public String serverVersion;
     public List<PluginSpec> additionalPlugins = new ArrayList<>();
-    @InputDirectory
     public DirectoryProperty projectDir;
     private boolean shutdownHookAdded = false;
     private Process serverProcess;
@@ -67,7 +65,13 @@ public class TestServerTask extends DefaultTask {
         Files.createDirectories(pluginDir);
         String mcVersion = (serverVersion != null && !serverVersion.isBlank()) ? serverVersion : fetchLatestVersion();
         int build = fetchLatestBuild(mcVersion);
-        CompletableFuture<Void> packageFuture = CompletableFuture.runAsync(this::buildPlugin);
+        CompletableFuture<Void> packageFuture = CompletableFuture.runAsync(() -> {
+            try {
+                buildPlugin();
+            } catch (IOException | RuntimeException e) {
+                throw new RuntimeException("Failed to package plugin", e);
+            }
+        });
         CompletableFuture<Path> paperFuture = CompletableFuture.supplyAsync(() -> {
             try {
                 return downloadPaper(mcVersion, build, tempServerDir);
@@ -104,24 +108,57 @@ public class TestServerTask extends DefaultTask {
         }
     }
 
-    private void buildPlugin() {
+    private void buildPlugin() throws IOException {
         try {
             String buildTool = detectBuildTool();
             Path base = projectDir.getAsFile().get().toPath();
-            ProcessBuilder pb;
-            if ("gradle".equalsIgnoreCase(buildTool)) {
-                boolean hasShadow = hasShadowPlugin(base);
-                getLogger().lifecycle("Packaging plugin using Gradle: " + (hasShadow ? "shadowJar" : "build"));
-                List<String> args = hasShadow ? List.of("gradle", "shadowJar") : List.of("gradle", "build");
-                pb = new ProcessBuilder(args);
-            } else {
-                throw new RuntimeException("Unknown build tool: " + buildTool);
+            if (!"gradle".equalsIgnoreCase(buildTool)) throw new RuntimeException("Unknown build tool: " + buildTool);
+
+            boolean hasShadow = hasShadowPlugin(base);
+            String task = hasShadow ? "shadowJar" : "build";
+            getLogger().lifecycle("Packaging plugin using Gradle: " + task);
+
+            boolean hasWrapperJar = Files.exists(base.resolve("gradle/wrapper/gradle-wrapper.jar"));
+            List<String> candidates = new ArrayList<>();
+            if (hasWrapperJar) {
+                candidates.add(".\\gradlew.bat");
+                candidates.add("./gradlew.bat");
+                candidates.add("./gradlew");
             }
+            candidates.add("gradle.bat");
+            candidates.add("gradle");
+
+            ProcessBuilder pb = null;
+            String chosenCmd = null;
+            for (String cmd : candidates) {
+                try {
+                    ProcessBuilder test = new ProcessBuilder(cmd, "--version");
+                    test.directory(base.toFile());
+                    test.redirectErrorStream(true);
+                    Process testProcess = test.start();
+                    testProcess.waitFor();
+                    pb = new ProcessBuilder(cmd, task);
+                    chosenCmd = cmd;
+                    break;
+                } catch (IOException | InterruptedException ignored) {
+                }
+            }
+
+            if (pb == null) throw new RuntimeException("Could not find any Gradle executable to use");
+            getLogger().lifecycle("Using Gradle command: " + chosenCmd);
+
             pb.directory(base.toFile());
-            pb.inheritIO();
+            pb.redirectErrorStream(true);
             Process process = pb.start();
-            if (!process.waitFor(2, TimeUnit.MINUTES) || process.exitValue() != 0) throw new RuntimeException("Gradle build failed");
-        } catch (IOException | RuntimeException | InterruptedException e) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    getLogger().lifecycle("[child] " + line);
+                }
+            }
+            int exit = process.waitFor();
+            if (exit != 0) throw new RuntimeException("Gradle build failed with exit code: " + exit);
+        } catch (RuntimeException | InterruptedException e) {
             throw new RuntimeException("Failed to package plugin", e);
         }
     }
@@ -144,11 +181,11 @@ public class TestServerTask extends DefaultTask {
     private Path findPluginJar() throws IOException {
         Path base = projectDir.getAsFile().get().toPath();
         try (Stream<Path> walk = Files.walk(base)) {
-            List<Path> targetDir = walk.filter(Files::isDirectory).filter(p -> p.getFileName().toString().equalsIgnoreCase("libs") && p.getParent().getFileName().toString().equalsIgnoreCase("build")).toList();
-            if (targetDir.isEmpty()) throw new IOException("No 'target' directory found in project tree starting at: " + base);
+            List<Path> libsDirs = walk.filter(Files::isDirectory).filter(p -> p.getFileName().toString().equalsIgnoreCase("libs") && p.getParent().getFileName().toString().equalsIgnoreCase("build")).toList();
+            if (libsDirs.isEmpty()) throw new IOException("No 'build/libs' directory found in project tree starting at: " + base);
             Path newestJar = null;
             long newestTime = -1;
-            for (Path target : targetDir) {
+            for (Path target : libsDirs) {
                 try (Stream<Path> files = Files.walk(target)) {
                     for (Path f : files.filter(Files::isRegularFile).toList()) {
                         String name = f.getFileName().toString();
@@ -165,7 +202,7 @@ public class TestServerTask extends DefaultTask {
                     }
                 }
             }
-            if (newestJar == null) throw new IOException("No valid plugin JAR found in any 'target' directory under: " + base);
+            if (newestJar == null) throw new IOException("No valid plugin JAR found in any 'build/libs' directory under: " + base);
             getLogger().lifecycle("Found plugin jar: " + newestJar);
             return newestJar;
         }
@@ -236,7 +273,6 @@ public class TestServerTask extends DefaultTask {
                         writer.flush();
                     }
                 }
-
             } catch (IOException e) {
                 getLogger().error("Console handling error", e);
             }
@@ -322,6 +358,11 @@ public class TestServerTask extends DefaultTask {
     @Input
     public List<PluginSpec> getAdditionalPlugins() {
         return additionalPlugins;
+    }
+
+    @InputDirectory
+    public DirectoryProperty getProjectDir() {
+        return projectDir;
     }
 
     public static class PluginSpec implements Serializable {
