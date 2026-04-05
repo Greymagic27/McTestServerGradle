@@ -22,12 +22,16 @@ import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+@CacheableTask
 public class TestServerTask extends DefaultTask {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -361,8 +365,17 @@ public class TestServerTask extends DefaultTask {
     }
 
     @InputDirectory
+    @PathSensitive(PathSensitivity.RELATIVE)
     public DirectoryProperty getProjectDir() {
         return projectDir;
+    }
+
+    @SuppressWarnings("unused")
+    public void plugin(String name, String url) {
+        PluginSpec spec = new PluginSpec();
+        spec.pluginName = name;
+        spec.pluginUrl = url;
+        additionalPlugins.add(spec);
     }
 
     public static class PluginSpec implements Serializable {
