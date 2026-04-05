@@ -60,8 +60,8 @@ public class TestServerTask extends DefaultTask {
     @TaskAction
     public void runTask() throws IOException, InterruptedException {
         Path tempServerDir = Files.createTempDirectory("mc-server-");
-        getLogger().lifecycle("Detected plugin version: " + getProject().getVersion());
         getLogger().lifecycle("Temp server directory: " + tempServerDir);
+        getLogger().lifecycle("Detected plugin version: " + getProject().getVersion());
         Path pluginDir = tempServerDir.resolve("plugins");
         Files.createDirectories(pluginDir);
         String mcVersion = (serverVersion != null && !serverVersion.isBlank()) ? serverVersion : fetchLatestVersion();
