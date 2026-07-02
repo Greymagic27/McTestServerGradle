@@ -23,17 +23,20 @@ import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.TaskAction;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+@CacheableTask
 public class TestServerTask extends DefaultTask {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    public String serverVersion;
     private final List<PluginSpec> plugins = new ArrayList<>();
+    public String serverVersion;
     public DirectoryProperty projectDir;
     private boolean shutdownHookAdded = false;
     private volatile boolean stopping = false;
@@ -373,8 +376,17 @@ public class TestServerTask extends DefaultTask {
     }
 
     @InputDirectory
+    @Classpath
     public DirectoryProperty getProjectDir() {
         return projectDir;
+    }
+
+    @SuppressWarnings("unused")
+    public void withPlugin(String name, String url) {
+        PluginSpec spec = new PluginSpec();
+        spec.pluginName = name;
+        spec.pluginUrl = url;
+        plugins.add(spec);
     }
 
     public static class PluginSpec implements Serializable {
@@ -387,13 +399,5 @@ public class TestServerTask extends DefaultTask {
             if (pluginName == null || pluginName.isBlank()) throw new IllegalArgumentException("pluginName is required for PluginSpec");
             if (pluginUrl == null || pluginUrl.isBlank()) throw new IllegalArgumentException("pluginUrl is required for PluginSpec");
         }
-    }
-
-    @SuppressWarnings("unused")
-    public void withPlugin(String name, String url) {
-        PluginSpec spec = new PluginSpec();
-        spec.pluginName = name;
-        spec.pluginUrl = url;
-        plugins.add(spec);
     }
 }
